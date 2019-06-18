@@ -16,4 +16,8 @@ public class AppMain {
     private JTextField textFieldAmountToReceive;
     private JList list1;
     private JButton buttonCalculate;
+
+    public JPanel getPanel1() {
+        return panel1;
+    }
 }

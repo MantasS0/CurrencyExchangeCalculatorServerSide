@@ -14,11 +14,11 @@ public abstract class Database {
     private static String dbHost = "localhost:3306";
     private static String dbName = "exchange_rate_db";
 
-    public abstract void saveData();
+    public abstract void updateData();
 
-    public abstract void deleteData();
+//    public abstract void deleteData();
 
-    protected abstract int createData();
+    public abstract void createData();
 
     private static boolean checkIfDBExists() {
         /* Patikriname ar irasytas JDBC driveris darbui su mysql */
@@ -64,7 +64,7 @@ public abstract class Database {
                 String createDatabaseStatement = "CREATE DATABASE " + Database.dbName + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
                 dbStatement = dbConnection.createStatement();
                 dbStatement.executeUpdate(createDatabaseStatement);
-                System.out.println("Created new Database \"" + Database.dbName + "\"");
+                System.out.println("Created new Database \"" + Database.dbName + "\"...");
                 String useDatabase = "USE " + Database.dbName + ";";
                 dbStatement.executeUpdate(useDatabase);
                 Database.checkTables();
@@ -111,7 +111,7 @@ public abstract class Database {
             try {
                 dbStatement = dbConnection.createStatement();
                 dbStatement.executeUpdate(createTableStatement);
-                System.out.println("Table \"" + tableName + "\" created");
+                System.out.println("Table \"" + tableName + "\" created...");
 
             }catch (SQLException e){
                 e.printStackTrace();
