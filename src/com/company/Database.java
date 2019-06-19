@@ -1,8 +1,9 @@
 package com.company;
 
 import java.sql.*;
+import java.util.TreeMap;
 
-public abstract class Database {
+public abstract class Database{
 
 
     protected static Connection dbConnection = null; // prisijungimas prie duombazes
@@ -13,6 +14,11 @@ public abstract class Database {
     private static String dbPassword = "";
     private static String dbHost = "localhost:3306";
     private static String dbName = "exchange_rate_db";
+
+    private static TreeMap<String, Currency> localCurrencyMap = new TreeMap<String, Currency>();
+
+
+    public Database() {}
 
     public abstract void updateData();
 
@@ -77,13 +83,12 @@ public abstract class Database {
 
     private static void checkTables() {
         try {
-            String[] tables = {"eur_rates", "usd_rates", "gbp_rates", "transactions"};
+            String[] tables = DAO.getTableNames();
             DatabaseMetaData metadata = dbConnection.getMetaData();
             for (int i = 0; i < tables.length; i++) {
                 ResultSet rs = metadata.getTables(null, null, tables[i], null);
                 if (!rs.next()) {
                     createTable(tables[i]);
-//                    System.out.println("Table " + tables[i] + " created");
                 }
             }
             System.out.println("Table check successful");
@@ -118,6 +123,11 @@ public abstract class Database {
             }
         }
     }
+
+    public static TreeMap<String, Currency> getLocalCurrencyMap() {
+        return localCurrencyMap;
+    }
+
 
 
 }
