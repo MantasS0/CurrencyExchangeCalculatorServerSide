@@ -56,10 +56,26 @@ public class DAO {
                 if (currency != null) {
                     Database.getLocalCurrencyMap().put(shortName, currency);
 
+
                     currency.createData();
                 }
             }
         }
+
+        for (Map.Entry<String, Currency> c : Database.getLocalCurrencyMap().entrySet()) {
+            System.out.println("Printing C key " + c.getKey());
+            System.out.println("Name: " + c.getValue().getNameLong());
+            System.out.println("Name short: " + c.getValue().getNameShort());
+            System.out.println("Name of table: " + c.getValue().getTableName());
+
+            for (Map.Entry<String, ExchangeRate> curr : c.getValue().getExchangeRates().entrySet()) {
+                System.out.println("Exchange rates key: " + curr.getKey());
+                System.out.println("Exchange rates currencyName: " + curr.getValue().getCurrency());
+                System.out.println("Exchange rates exchangeRate: " + curr.getValue().getExchangeRate());
+            }
+            System.out.println();
+        }
+
     }
 
     public static Currency createLocalCurrencyResource(String tableName, String currencyName) {
@@ -70,7 +86,7 @@ public class DAO {
             for (Map.Entry<String, Double> currency : currencyRates.get(currencyName).entrySet()) {
 
                 ExchangeRate currencyExchangeRate = new ExchangeRate(currency.getKey(), currency.getValue());
-                currencyExchangeMap.put(currencyName, currencyExchangeRate);
+                currencyExchangeMap.put(currency.getKey(), currencyExchangeRate);
 
             }
             Currency currency = new Currency(tableName, currencyName, currencyLongNames.get(currencyName), currencyExchangeMap);

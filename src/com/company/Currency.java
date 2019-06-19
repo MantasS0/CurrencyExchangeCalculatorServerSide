@@ -39,6 +39,20 @@ public class Currency extends Database {
         }
     }
 
+    public void insertRate(Map.Entry<String, ExchangeRate> currency) {
+        try {
+            String insertQueryStatement = "INSERT INTO " + this.tableName + " (`currency`, `sold_rate`, `buy_rate`) VALUES (?, ?, ?)";
+            dbPrepareStatement = dbConnection.prepareStatement(insertQueryStatement);
+            dbPrepareStatement.setString(1, currency.getKey());
+            dbPrepareStatement.setDouble(2, currency.getValue().getExchangeRate());
+            dbPrepareStatement.setDouble(3, currency.getValue().getExchangeRate());
+            dbPrepareStatement.execute();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void createData() {
 
@@ -47,28 +61,40 @@ public class Currency extends Database {
             dbPrepareStatement = dbConnection.prepareStatement(selectQueryStatement);
             ResultSet results = dbPrepareStatement.executeQuery();
 
-            System.out.println("Cia pasieke");
 
-            while (results.next()) {
-                /* Gauname rezultatus is duombazes ir issaugome i laikinus darbinius kintamuosius */
-                String currencyName = results.getString("currency");
+            if (results.getFetchSize() == 0) {
+//                System.out.println("Cia pasieke");
+
+//                String currencyName = results.getString("currency");
                 for (Map.Entry<String, ExchangeRate> currency : this.exchangeRates.entrySet()) {
-                    if (!currency.getKey().equals(currencyName)) {
+//                    if (!currency.getKey().equals(currencyName)) {
 
-                        try {
-                            String insertQueryStatement = "INSERT INTO " + this.tableName + " (`currency`, `sold_rate`, `buy_rate`) VALUES (?, ?, ?)";
-                            dbPrepareStatement = dbConnection.prepareStatement(insertQueryStatement);
-                            dbPrepareStatement.setString(1, currency.getKey());
-                            dbPrepareStatement.setDouble(2, currency.getValue().getExchangeRate());
-                            dbPrepareStatement.setDouble(3, currency.getValue().getExchangeRate());
-                            dbPrepareStatement.execute();
-
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                            this.insertRate(currency);
+//                    }
                 }
+
             }
+
+//            while (results.next()) {
+//                /* Gauname rezultatus is duombazes ir issaugome i laikinus darbinius kintamuosius */
+//                String currencyName = results.getString("currency");
+//                for (Map.Entry<String, ExchangeRate> currency : this.exchangeRates.entrySet()) {
+//                    if (!currency.getKey().equals(currencyName)) {
+//
+//                        try {
+//                            String insertQueryStatement = "INSERT INTO " + this.tableName + " (`currency`, `sold_rate`, `buy_rate`) VALUES (?, ?, ?)";
+//                            dbPrepareStatement = dbConnection.prepareStatement(insertQueryStatement);
+//                            dbPrepareStatement.setString(1, currency.getKey());
+//                            dbPrepareStatement.setDouble(2, currency.getValue().getExchangeRate());
+//                            dbPrepareStatement.setDouble(3, currency.getValue().getExchangeRate());
+//                            dbPrepareStatement.execute();
+//
+//                        } catch (SQLException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                }
+//            }
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -101,5 +127,15 @@ public class Currency extends Database {
         this.exchangeRates = exchangeRates;
     }
 
+    public String getTableName() {
+        return tableName;
+    }
 
+    public String getNameShort() {
+        return nameShort;
+    }
+
+    public String getNameLong() {
+        return nameLong;
+    }
 }
