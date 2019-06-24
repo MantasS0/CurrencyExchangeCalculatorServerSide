@@ -1,32 +1,29 @@
 package com.company;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import javax.swing.*;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class Main {
     public static void main(String[] args) {
+        DAO.setTableNames();
+
         Database.makeDBConnection();
 
-//        TreeMap<String, ExchangeRate> eurExchangeMap = new TreeMap<String, ExchangeRate>();
-//
-//        ExchangeRate usdExchangeRate = new ExchangeRate("USD", 0.5);
-//        eurExchangeMap.put("USD", usdExchangeRate);
-//
-//        ExchangeRate gbpExchangeRate = new ExchangeRate("GBP", 2.0);
-//        eurExchangeMap.put("GBP", gbpExchangeRate);
-//        Currency currencyEUR = new Currency("eur_rates", "EUR", "Euro", eurExchangeMap);
-//        currencyEUR.createData();
-//
-//        usdExchangeRate.setExchangeRate(0.25);
-//        currencyEUR.getExchangeRates().put("USD", usdExchangeRate);
-//        currencyEUR.updateData();
-
-        DAO.generateAllLocalResources();
 
 
-    }
 
-    private static void loadResources() {
+
+
+
 
     }
 

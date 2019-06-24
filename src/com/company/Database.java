@@ -1,9 +1,11 @@
 package com.company;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Currency;
 import java.util.TreeMap;
 
-public abstract class Database{
+public class Database {
 
 
     protected static Connection dbConnection = null; // prisijungimas prie duombazes
@@ -15,16 +17,9 @@ public abstract class Database{
     private static String dbHost = "localhost:3306";
     private static String dbName = "exchange_rate_db";
 
-    private static TreeMap<String, Currency> localCurrencyMap = new TreeMap<String, Currency>();
 
-
-    public Database() {}
-
-    public abstract void updateData();
-
-//    public abstract void deleteData();
-
-    public abstract void createData();
+    public Database() {
+    }
 
     private static boolean checkIfDBExists() {
         /* Patikriname ar irasytas JDBC driveris darbui su mysql */
@@ -61,8 +56,11 @@ public abstract class Database{
                 Database.dbConnection = DriverManager.getConnection("jdbc:mysql://" + dbHost + "/" + dbName + "?useSSL=true", dbUser, dbPassword);
                 System.out.println("Database connection successful");
                 Database.checkTables();
+
             } catch (SQLException e) {
                 e.printStackTrace();
+            } finally {
+                DAO.updateTableValues();
             }
         } else {
             System.out.println("Database does not exist");
@@ -74,6 +72,7 @@ public abstract class Database{
                 String useDatabase = "USE " + Database.dbName + ";";
                 dbStatement.executeUpdate(useDatabase);
                 Database.checkTables();
+                DAO.insertRates();
 
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -83,12 +82,13 @@ public abstract class Database{
 
     private static void checkTables() {
         try {
-            String[] tables = DAO.getTableNames();
+            ArrayList<String> tables = DAO.getTableNames();
             DatabaseMetaData metadata = dbConnection.getMetaData();
-            for (int i = 0; i < tables.length; i++) {
-                ResultSet rs = metadata.getTables(null, null, tables[i], null);
+            for (int i = 0; i < tables.size(); i++) {
+                ResultSet rs = metadata.getTables(null, null, tables.get(i), null);
                 if (!rs.next()) {
-                    createTable(tables[i]);
+                    createTable(tables.get(i));
+                    DAO.insertRates(tables.get(i));
                 }
             }
             System.out.println("Table check successful");
@@ -99,14 +99,8 @@ public abstract class Database{
 
     private static void createTable(String tableName) {
         String createTableStatement = null;
-        if (tableName.equals("eur_rates")) {
-            createTableStatement = "CREATE TABLE `" + Database.dbName + "`.`eur_rates` ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT , `currency` VARCHAR(5) NOT NULL , `sold_rate` DOUBLE UNSIGNED NOT NULL , `buy_rate` DOUBLE UNSIGNED NOT NULL , `updated` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`id`)) ENGINE = InnoDB;";
-
-        } else if (tableName.equals("usd_rates")) {
-            createTableStatement = "CREATE TABLE `" + Database.dbName + "`.`usd_rates` ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT , `currency` VARCHAR(5) NOT NULL , `sold_rate` DOUBLE UNSIGNED NOT NULL , `buy_rate` DOUBLE UNSIGNED NOT NULL , `updated` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`id`)) ENGINE = InnoDB;";
-
-        } else if (tableName.equals("gbp_rates")) {
-            createTableStatement = "CREATE TABLE `" + Database.dbName + "`.`gbp_rates` ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT , `currency` VARCHAR(5) NOT NULL , `sold_rate` DOUBLE UNSIGNED NOT NULL , `buy_rate` DOUBLE UNSIGNED NOT NULL , `updated` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`id`)) ENGINE = InnoDB;";
+        if (tableName.contains("_rates")) {
+            createTableStatement = "CREATE TABLE `" + Database.dbName + "`.`" + tableName + "` ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT , `currency` VARCHAR(5) NOT NULL , `sold_rate` DOUBLE UNSIGNED NOT NULL , `buy_rate` DOUBLE UNSIGNED NOT NULL , `updated` TIMESTAMP on update CURRENT_TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`id`)) ENGINE = InnoDB;";
 
         } else if (tableName.equals("transactions")) {
             createTableStatement = "CREATE TABLE `" + Database.dbName + "`.`transactions` ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT , `sold_currency` VARCHAR(5) NOT NULL , `sold_amount` DOUBLE UNSIGNED NOT NULL , `bought_currency` VARCHAR(5) NOT NULL , `bought_amount` DOUBLE UNSIGNED NOT NULL , `exchange_rate` DOUBLE UNSIGNED NOT NULL , `time_stamp` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP , PRIMARY KEY (`id`)) ENGINE = InnoDB;";
@@ -118,14 +112,10 @@ public abstract class Database{
                 dbStatement.executeUpdate(createTableStatement);
                 System.out.println("Table \"" + tableName + "\" created...");
 
-            }catch (SQLException e){
+            } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static TreeMap<String, Currency> getLocalCurrencyMap() {
-        return localCurrencyMap;
     }
 
 

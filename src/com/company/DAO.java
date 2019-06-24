@@ -1,106 +1,131 @@
 package com.company;
 
-import java.util.HashMap;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class DAO {
+public class DAO extends Database {
 
-    private static String[] tableNames = {"eur_rates", "usd_rates", "gbp_rates", "transactions"};
-    private static HashMap<String, String> currencyLongNames = new HashMap<String, String>() {{
-        put("USD", "United States Dollar");
-        put("EUR", "Euro");
-        put("GBP", "British Pound");
-    }};
-
-
-    private static HashMap<String, Double> ratesForEUR = new HashMap<String, Double>() {{
-        put("USD", 1.5);
-        put("GBP", 0.5);
-    }};
-
-    private static HashMap<String, Double> ratesForGBP = new HashMap<String, Double>() {{
-        put("USD", 3.0);
-        put("EUR", 1.5);
-    }};
-
-    private static HashMap<String, Double> ratesForUSD = new HashMap<String, Double>() {{
-        put("EUR", 0.5);
-        put("GBP", 0.25);
-    }};
-
-    private static HashMap<String, HashMap<String, Double>> currencyRates = new HashMap<String, HashMap<String, Double>>() {{
-        put("USD", DAO.ratesForUSD);
-        put("GBP", DAO.ratesForGBP);
-        put("EUR", DAO.ratesForEUR);
-    }};
+    private static ArrayList<String> tableNames = new ArrayList<String>();
 
     public DAO() {
     }
 
-    public static String[] getTableNames() {
+    public static void setTableNames(){
+        TreeMap<String,Double> ratesFromAPI = new TreeMap<String, Double>();
+        ratesFromAPI = API.getRatesFromAPI("EUR");
+        for (Map.Entry<String, Double> entry : ratesFromAPI.entrySet()) {
+            String name = entry.getKey().toLowerCase() + "_rates";
+            getTableNames().add(name);
+        }
+        getTableNames().add("transactions");
+
+    }
+
+    public static ArrayList<String> getTableNames() {
         return tableNames;
     }
 
-    public static HashMap<String, String> getCurrencyLongNames() {
-        return currencyLongNames;
-    }
 
-    public static void generateAllLocalResources() {
+    public static void updateTableValues() {
+        try {
+            DatabaseMetaData metadata = dbConnection.getMetaData();
+            ResultSet rs = metadata.getTables("exchange_rate_db", null, null, new String[]{"TABLE", "VIEW"});
+            while (rs.next()) {
+                String tableName = rs.getString("TABLE_NAME");
+                if (tableName.contains("_rates")) {
+                    System.out.println("Updating " + tableName + " values...");
 
-        for (int i = 0; i < tableNames.length; i++) {
-            if (tableNames[i].contains("_rates")) {
-                String shortName = tableNames[i].substring(0, 3).toUpperCase();
-                Currency currency = createLocalCurrencyResource(tableNames[i], shortName);
+                    String tableCurrency = tableName.substring(0, 3).toUpperCase();
+                    TreeMap<String, Double> ratesFromAPI = API.getRatesFromAPI(tableCurrency);
 
-                if (currency != null) {
-                    Database.getLocalCurrencyMap().put(shortName, currency);
+                    for (Map.Entry<String, Double> entry : ratesFromAPI.entrySet()) {
+                        if (!entry.getKey().equals(tableCurrency)) {
+                            try {                                                                                                                           //WHERE DATE_ADD(NOW(), INTERVAL 2 HOUR) > start_time
+                                String insertQueryStatement = "UPDATE " + tableName + " SET `sold_rate` = ?, `buy_rate` = ? WHERE " + tableName + ".`currency` = ?";
+                                dbPrepareStatement = dbConnection.prepareStatement(insertQueryStatement);                                                       // AND `updated` < DATE_ADD(NOW(), INTERVAL 4 HOUR)
+                                dbPrepareStatement.setDouble(1, entry.getValue());
+                                dbPrepareStatement.setDouble(2, entry.getValue());
+                                dbPrepareStatement.setString(3, entry.getKey());
+                                dbPrepareStatement.executeUpdate();
 
-
-                    currency.createData();
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
                 }
-            }
-        }
 
-        for (Map.Entry<String, Currency> c : Database.getLocalCurrencyMap().entrySet()) {
-            System.out.println("Printing C key " + c.getKey());
-            System.out.println("Name: " + c.getValue().getNameLong());
-            System.out.println("Name short: " + c.getValue().getNameShort());
-            System.out.println("Name of table: " + c.getValue().getTableName());
-
-            for (Map.Entry<String, ExchangeRate> curr : c.getValue().getExchangeRates().entrySet()) {
-                System.out.println("Exchange rates key: " + curr.getKey());
-                System.out.println("Exchange rates currencyName: " + curr.getValue().getCurrency());
-                System.out.println("Exchange rates exchangeRate: " + curr.getValue().getExchangeRate());
-            }
-            System.out.println();
-        }
-
-    }
-
-    public static Currency createLocalCurrencyResource(String tableName, String currencyName) {
-        TreeMap<String, ExchangeRate> currencyExchangeMap = new TreeMap<String, ExchangeRate>();
-
-        if (currencyRates.get(currencyName) != null) {
-
-            for (Map.Entry<String, Double> currency : currencyRates.get(currencyName).entrySet()) {
-
-                ExchangeRate currencyExchangeRate = new ExchangeRate(currency.getKey(), currency.getValue());
-                currencyExchangeMap.put(currency.getKey(), currencyExchangeRate);
 
             }
-            Currency currency = new Currency(tableName, currencyName, currencyLongNames.get(currencyName), currencyExchangeMap);
-
-            return currency;
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        return null;
     }
 
-/*
- *  REDUNDANT.
-    private HashMap<String,Double> getRates(String forCurrency){
-        return DAO.currencyRates.get(forCurrency);
+    public static void insertRates() {
+
+        try {
+            DatabaseMetaData metadata = dbConnection.getMetaData();
+            ResultSet rs = metadata.getTables("exchange_rate_db", null, null, new String[]{"TABLE", "VIEW"});
+            while (rs.next()) {
+                String tableName = rs.getString("TABLE_NAME");
+                if (tableName.contains("_rates")) {
+                    System.out.println("Creating new values in " + tableName);
+
+                    String tableCurrency = tableName.substring(0, 3).toUpperCase();
+                    TreeMap<String, Double> ratesFromAPI = API.getRatesFromAPI(tableCurrency);
+
+                    for (Map.Entry<String, Double> entry : ratesFromAPI.entrySet()) {
+                        if (!entry.getKey().equals(tableCurrency)) {
+                            try {
+                                String insertQueryStatement = "INSERT INTO " + tableName + " (`currency`, `sold_rate`, `buy_rate`) VALUES (?, ?, ?)";
+                                dbPrepareStatement = dbConnection.prepareStatement(insertQueryStatement);
+                                dbPrepareStatement.setString(1, entry.getKey());
+                                dbPrepareStatement.setDouble(2, entry.getValue());
+                                dbPrepareStatement.setDouble(3, entry.getValue());
+                                dbPrepareStatement.execute();
+
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
-*/
+
+    public static void insertRates(String tableName) {
+                if (tableName.contains("_rates")) {
+                    System.out.println("Creating new values in " + tableName);
+                    String tableCurrency = tableName.substring(0, 3).toUpperCase();
+                    TreeMap<String, Double> ratesFromAPI = API.getRatesFromAPI(tableCurrency);
+
+                    for (Map.Entry<String, Double> entry : ratesFromAPI.entrySet()) {
+                        if (!entry.getKey().equals(tableCurrency)) {
+                            try {
+                                String insertQueryStatement = "INSERT INTO " + tableName + " (`currency`, `sold_rate`, `buy_rate`) VALUES (?, ?, ?)";
+                                dbPrepareStatement = dbConnection.prepareStatement(insertQueryStatement);
+                                dbPrepareStatement.setString(1, entry.getKey());
+                                dbPrepareStatement.setDouble(2, entry.getValue());
+                                dbPrepareStatement.setDouble(3, entry.getValue());
+                                dbPrepareStatement.execute();
+
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+    }
+
 
 }
