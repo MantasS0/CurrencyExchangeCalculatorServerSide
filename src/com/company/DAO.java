@@ -21,6 +21,8 @@ public class DAO extends Database {
             String name = entry.getKey().toLowerCase() + "_rates";
             getTableNames().add(name);
         }
+
+        getTableNames().add("eur_rates");
         getTableNames().add("transactions");
 
     }

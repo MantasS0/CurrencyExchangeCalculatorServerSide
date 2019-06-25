@@ -16,6 +16,9 @@ public class API {
 
     private static final String sURL = "https://api.exchangeratesapi.io/latest?base="; //just a string
 
+    public API() {
+    }
+
     public static TreeMap<String,Double> getRatesFromAPI(String forCurrency) {
         try {
             // Connect to the URL using java's native library
